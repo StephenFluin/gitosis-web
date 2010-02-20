@@ -51,6 +51,8 @@ function showGitosisAdmin($dir) {
 			chdir($dir);
 			system("git pull");
 		}
+		checkKeyCreation();
+
 
 		$config = getConfig();
 		$body .= getUserList($config);
@@ -96,9 +98,9 @@ function getUserList($data) {
 		$keys = explode(" ",$matches[2][$i]);
 		foreach($keys as $key) {
 			$body .= "$key:<br/>\n";
-			$body .= "<textarea style=\"width:100%;height:75px;\">" . file_get_contents($_SESSION["gitosisurl"] . "keydir/" . $key . ".pub") . "</textarea>";
+			$body .= "<textarea style=\"width:100%;height:50px;\">" . file_get_contents($_SESSION["gitosisurl"] . "keydir/" . $key . ".pub") . "</textarea>";
 		}
-		$body .= '<form method="post"><h4>New</h4><input type="text" name="keyname"/><textarea style="width:100%;height:75px;" name="keyvalue"></textarea><button type="submit">Create</button></form>';
+		$body .= '<form method="post"><h4>New</h4><input type="text" name="keyname"/><textarea style="width:100%;height:50px;" name="keyvalue"></textarea><button type="submit">Create</button></form>';
 		$i++;
 		
 		
@@ -107,5 +109,30 @@ function getUserList($data) {
 	return $body;
 }
 
+function checkKeyCreation() {
+	$k = $_POST["keyname"];
+	$v = $_POST["keyvalue"];
+	if($k && $v) {
+		$dir = $_SESSION["gitosisurl"];
+
+		do {
+			$k = strtr($k,array("/"=>"","."=>""));
+		} while(strpos($k,".") !== false);
+		if(file_exists($dir . "keydir/" . $k . ".pub")) {
+			// Refuse to overwrite anything.
+		} else {
+			$fp = fopen($dir . "keydir/" . $k . ".pub","w");
+			$result=fwrite($fp,$v);
+			if($result) {
+				chdir($dir);
+				system("git add keydir/" . $k . ".pub");
+				system("git commit -m \"Added new key for $v\"");
+				system("git push");
+			}
+		}
+		forward("index.php");
+	}
+}
+	
 
 	
