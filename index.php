@@ -4,7 +4,8 @@ require("functions.inc.php");
 
 
 if($_POST["path"]) {
-	$_SESSION["gitosisurl"] = $_POST["path"];
+	$path = $_POST["path"];
+	$_SESSION["gitosisurl"] = $path;
 	forward("index.php");
 }
 if($_GET["action"] == "logout") {
@@ -40,21 +41,20 @@ displayPage($body);
 function showGitosisAdmin($dir) {
 		authenticate();
 		if($_POST["config"]) {
-			$fp = fopen($dir . "gitosis.conf","w");
-			
-			fwrite($fp, strtr($_POST["config"],"\r\n",""));
+			writeConfig(strtr($_POST["config"],"\r\n",""));
 			chdir($dir);
 			system("git commit -am 'automated config update from gitosis-web'");
 			system("git push");
 			forward($_SERVER["PHP_SELF"]);
 		} else {
 			chdir($dir);
-			system("git pull");
+			exec("git pull");
 		}
-		checkKeyCreation();
+		
 
 
 		$config = getConfig();
+		checkKeyChanges($config);
 		$body .= getUserList($config);
 		$body .= '<form method="post"><textarea name="config" style="width:500px;height:400px;">' . $config . '</textarea><br/><button type="submit">Save and Push</button></form>';
 	return $body;
@@ -79,7 +79,7 @@ function authenticate() {
 			
 		
 		$body .= 'Please enter a username and password.';
-		$body .= '<form method="post"><input type="text" name="name"/><input type="password" name="password"/><button type="submit">Login</button<?form>';
+		$body .= '<form method="post"><input type="text" name="name" placeholder="username"/><input type="password" name="password" placeholder="password"/><button type="submit">Login</button<?form>';
 		displayPage($body);
 		exit;
 	}
@@ -88,19 +88,25 @@ function authenticate() {
 function getConfig() {
 	return file_get_contents($_SESSION["gitosisurl"] . "gitosis.conf");
 }
+function writeConfig($content) {
+	if($_SESSION["gitosisurl"]) {
+		$fp = fopen($dir . "gitosis.conf","w");
+		fwrite($fp, $content);
+	}
+}
 function getUserList($data) {
-	preg_match_all("@\[group user-([^\]]*)\].*members = ([^\r\n]*)\r?\n@ms",$data,$matches);
-	
+	preg_match_all("@\[group user-([^\]]*)\][^\[]*?members = ([^\r\n]*)\r?\n@ms",$data,$matches);
+	//var_dump($matches);
 	$body .= "<h2>User List</h2>";
 	$i = 0;
 	while($matches[1][$i]) {
 		$body .= "<h3>" . $matches[1][$i] . "</h3><br/>\n";
 		$keys = explode(" ",$matches[2][$i]);
 		foreach($keys as $key) {
-			$body .= "$key:<br/>\n";
+			$body .= "$key: <a href=\"?action=delete&user=" . $matches[1][$i] . "&key=$key\">delete</a><br/>\n";
 			$body .= "<textarea style=\"width:100%;height:50px;\">" . file_get_contents($_SESSION["gitosisurl"] . "keydir/" . $key . ".pub") . "</textarea>";
 		}
-		$body .= '<form method="post"><h4>New</h4><input type="text" name="keyname"/><textarea style="width:100%;height:50px;" name="keyvalue"></textarea><button type="submit">Create</button></form>';
+		$body .= '<form method="post"><h4>New</h4><input type="hidden" name="user" value="' . $matches[1][$i] . '"/><input type="text" name="keyname"/><textarea style="width:100%;height:50px;" name="keyvalue"></textarea><button type="submit">Create</button></form>';
 		$i++;
 		
 		
@@ -109,10 +115,15 @@ function getUserList($data) {
 	return $body;
 }
 
-function checkKeyCreation() {
+function checkKeyChanges($config) {
 	$k = $_POST["keyname"];
 	$v = $_POST["keyvalue"];
-	if($k && $v) {
+	$u = $_POST["user"];
+	$us = $_GET["user"];
+	$ke = $_GET["key"];
+	$a = $_GET["action"];
+
+	if($k && $v && $u) {
 		$dir = $_SESSION["gitosisurl"];
 
 		do {
@@ -126,12 +137,45 @@ function checkKeyCreation() {
 			if($result) {
 				chdir($dir);
 				system("git add keydir/" . $k . ".pub");
-				system("git commit -m \"Added new key for $v\"");
+				system("git commit -am \"Added new key for $v\"");
 				system("git push");
 			}
 		}
 		forward("index.php");
+	} else if($us && $ke && $a == "delete") {
+		$dir = $_SESSION["gitosisurl"];
+		if(file_exists($dir . "keydir/" . $ke . ".pub")) {
+			
+			do {
+				$ke = strtr($ke,array("/"=>"","."=>""));
+			} while(strpos($k,".") !== false);
+			if(file_exists($dir . "keydir/" . $ke . ".pub")) {
+				
+				$pattern = "/^members = (.*) $ke(.*)$/m";
+				if(preg_match($pattern, $config)) {
+					//print "Replace pattern matched.<br/>";
+				} else {
+					//print "Replace pattern '$pattern' didn't match.<br/>";
+				}
+				$config = preg_replace($pattern, 'members = $1$2',$config);
+				//print "Replaced and resulted in <pre>$config</pre><br/>";
+				//print 'Trying to delete ' . $ke .' for ' . $us . ".<br/>";
+
+				chdir($dir);
+				writeConfig($config);
+				exec("git rm keydir/" . $ke . ".pub");
+				exec("git add gitosis.conf");
+				exec("git commit -m \"Removed key for $us, removed from config.\"");
+				system("git push");
+				forward("index.php");
+
+			}
+		} else {
+			// Key file not found.
+			forward("index.php");
+		}
 	}
+	
 }
 	
 

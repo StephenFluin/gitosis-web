@@ -12,5 +12,5 @@ function displayPage($page) {
 <style type="text/css">
 * { padding:0;margin:0;}
 </style>
-</head><body>' . $page . "</body></html>";
+</head><body>' . $page . "<div style=\"color:red;text-align:center;\">Caution: All changes made using this tool are immediately pushed to the server, and can irrecoverably break your gitosis installation.</body></html>";
 }
