@@ -1,0 +1,2 @@
+Gitosis Web
+Gitosis Web is designed to is designed to be a layer on top of gitosis. Leveraging PHP and extra properties stored in the gitosis configuration to allow and administrator to control the entire file, and to allow individual users to manage their keys.
