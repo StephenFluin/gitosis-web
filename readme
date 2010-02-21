@@ -1,2 +1,13 @@
 Gitosis Web
+
 Gitosis Web is designed to is designed to be a layer on top of gitosis. Leveraging PHP and extra properties stored in the gitosis configuration to allow and administrator to control the entire file, and to allow individual users to manage their keys.
+
+Install Instructions
+------------
+To install, you will need working installations of git, gitosis, php, and mysql.  This system has been tested under linux, but might work on windows too (Assuming you have git in your PATH).  Once you have this, make sure your apache user (probably www-data) has a checked out copy of gitosis-admin, and that it has a key setup with the gitosis server you want to administrate.  You should add a "name = x" row for your adiministrator to the [gitosis] section, and an "x = pass" section to specify the cleartext password.
+
+Once you have it setup, you load the web interface, specify the path of the gitosis-admin working copy, and provide a username and password.  From there you can make changes to the gitosis configuration, or add keys to already specified users.  Each user should get a group looking like [group user-stephen].
+
+Future Plans
+-----------
+At some point in the future, I hope to add the ability to manage users without tweaking the gitosis.conf file, or allow users to manage their own keys.  Allowing project owners might be a cool idea, but might make the interface too complex.
