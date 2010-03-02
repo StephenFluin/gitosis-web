@@ -55,8 +55,9 @@ function showGitosisAdmin($dir) {
 
 		$config = getConfig();
 		checkKeyChanges($config);
+		$body .= '<form method="post" class="leftPanel"><textarea name="config" style="width:500px;height:400px;">' . $config . '</textarea><br/><button type="submit">Save and Push</button></form>';
 		$body .= getUserList($config);
-		$body .= '<form method="post"><textarea name="config" style="width:500px;height:400px;">' . $config . '</textarea><br/><button type="submit">Save and Push</button></form>';
+                $body .= getKeyList();
 	return $body;
 }
 
@@ -111,9 +112,21 @@ function getUserList($data) {
 		
 		
 	}
-	$body = '<div style="width:600px;float:right;border:1px solid black;">' . $body . '</div>';
+	$body = '<div class="rightPanel">' . $body . '</div>';
 	return $body;
 }
+function getKeyList() {
+	$body .= "<h2>Key List</h2>";
+	$files = scandir($_SESSION["dir"] . "keydir/");
+	foreach($files as $file) {
+		if(preg_match("/^(.*)\.pub$/",$file)) {
+			$body .= $file . "<br/>";
+		}
+	}
+
+	return '<div class="rightPanel">' . $body . '</div>';
+}
+	
 
 function checkKeyChanges($config) {
 	$k = $_POST["keyname"];
