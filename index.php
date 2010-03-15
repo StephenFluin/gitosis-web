@@ -45,7 +45,7 @@ function showGitosisAdmin($dir) {
 			chdir($dir);
 			system("git commit -am 'automated config update from gitosis-web'");
 			system("git push");
-			#forward($_SERVER["PHP_SELF"] . "?msg=cupdated");
+			forward($_SERVER["PHP_SELF"] . "?msg=cupdated");
 		} else {
 			chdir($dir);
 			exec("git pull");
@@ -105,7 +105,7 @@ function getUserList($data) {
 		$body .= "<h3>" . $matches[1][$i] . "</h3><br/>\n";
 		$keys = explode(" ",$matches[2][$i]);
 		foreach($keys as $key) {
-			$body .= "$key: <a href=\"?action=delete&user=" . $matches[1][$i] . "&key=$key\">delete</a><br/>\n";
+			$body .= "$key: <a href=\"?action=delete&user=" . $matches[1][$i] . "&key=" . urlencode($key) . "\">delete key</a><br/>\n";
 			$body .= "<textarea style=\"width:100%;height:50px;\">" . file_get_contents($_SESSION["gitosisurl"] . "keydir/" . $key . ".pub") . "</textarea>";
 		}
 		$body .= '<form method="post"><h4>New</h4><input type="hidden" name="user" value="' . $matches[1][$i] . '"/><input type="text" name="keyname"/><textarea style="width:100%;height:50px;" name="keyvalue"></textarea><button type="submit">Create</button></form>';
@@ -177,16 +177,20 @@ function checkKeyChanges($config) {
 
 				chdir($dir);
 				writeConfig($config);
-				exec("git rm keydir/" . $ke . ".pub");
+				print "Working with key='$ke'.\n";
+				$ke = strtr($ke, array("@"=> "\@"));
+				print "Key became key='$ke'.\n<br/>";
+				system("git rm keydir/" . $ke . ".pub");
 				exec("git add gitosis.conf");
 				exec("git commit -m \"Removed key for $us, removed from config.\"");
 				system("git push");
-				forward("index.php" . "?msg=keydeleted");
+				print "Deleted key by running git rm keydir/" . $ke . ".pub";
+				#forward("index.php" . "?msg=keydeleted" . "&ran=git rm keydir/" . $ke . ".pub");
 
 			}
 		} else {
 			// Key file not found.
-			forward("index.php");
+			forward("index.php?msg=keynotfound");
 		}
 	}
 	
