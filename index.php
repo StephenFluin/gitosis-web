@@ -45,7 +45,7 @@ function showGitosisAdmin($dir) {
 			chdir($dir);
 			system("git commit -am 'automated config update from gitosis-web'");
 			system("git push");
-			forward($_SERVER["PHP_SELF"]);
+			#forward($_SERVER["PHP_SELF"] . "?msg=cupdated");
 		} else {
 			chdir($dir);
 			exec("git pull");
@@ -72,7 +72,7 @@ function authenticate() {
 				//Successfully authenticated the admin.
 				$_SESSION["gitosisuser"] = $n;
 				$_SESSION["gitosisadmin"] = true;
-				forward("index.php");
+				forward("index.php" . "?msg=loginsuccess");
 			} else {
 				$body .= "Invalid admin.<br/><pre>$data</pre>";
 			}
@@ -91,6 +91,7 @@ function getConfig() {
 }
 function writeConfig($content) {
 	if($_SESSION["gitosisurl"]) {
+		$dir = $_SESSION["gitosisurl"];
 		$fp = fopen($dir . "gitosis.conf","w");
 		fwrite($fp, $content);
 	}
@@ -150,11 +151,11 @@ function checkKeyChanges($config) {
 			if($result) {
 				chdir($dir);
 				system("git add keydir/" . $k . ".pub");
-				system("git commit -am \"Added new key for $v\"");
+				system("git commit -am \"Added new key for $k\"");
 				system("git push");
 			}
 		}
-		forward("index.php");
+		forward("index.php" . "?msg=keyadded");
 	} else if($us && $ke && $a == "delete") {
 		$dir = $_SESSION["gitosisurl"];
 		if(file_exists($dir . "keydir/" . $ke . ".pub")) {
@@ -180,7 +181,7 @@ function checkKeyChanges($config) {
 				exec("git add gitosis.conf");
 				exec("git commit -m \"Removed key for $us, removed from config.\"");
 				system("git push");
-				forward("index.php");
+				forward("index.php" . "?msg=keydeleted");
 
 			}
 		} else {
