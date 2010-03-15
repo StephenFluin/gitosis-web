@@ -177,13 +177,10 @@ function checkKeyChanges($config) {
 
 				chdir($dir);
 				writeConfig($config);
-				print "Working with key='$ke'.\n";
-				print "Key became key='$ke'.\n<br/>";
 				system("git rm \"keydir/" . $ke . ".pub\"");
 				exec("git add gitosis.conf");
 				exec("git commit -m \"Removed key for $us, removed from config.\"");
 				system("git push");
-				print "Deleted key by running git rm keydir/" . $ke . ".pub";
 				forward("index.php" . "?msg=keydeleted" );
 
 			}
